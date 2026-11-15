@@ -23,6 +23,9 @@
     <dependency><groupId>javax.annotation</groupId><artifactId>javax.annotation-api</artifactId><version>1.3.2</version><scope>provided</scope></dependency>
     <dependency><groupId>org.jetbrains</groupId><artifactId>annotations</artifactId><version>24.1.0</version><scope>provided</scope></dependency>
 
+    <!-- AEM API (com.day.cq.*), required on the classpath by AEM Mocks -->
+    <dependency><groupId>com.adobe.aem</groupId><artifactId>aem-sdk-api</artifactId><version>2024.11.18751.20241128T090041Z-241100</version><scope>provided</scope></dependency>
+
     <!-- Test: AEM Mocks + JUnit 5 + Mockito -->
     <dependency><groupId>io.wcm</groupId><artifactId>io.wcm.testing.aem-mock.junit5</artifactId><version>5.6.2</version><scope>test</scope></dependency>
     <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><version>5.10.2</version><scope>test</scope></dependency>
@@ -32,6 +35,11 @@
   <build>
     <plugins>
       <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.11.0</version><configuration><release>11</release></configuration></plugin>
+      <!-- Generates OSGI-INF/*.xml (SCR + metatype) from DS annotations; required by OSGi Mock in tests -->
+      <plugin>
+        <groupId>biz.aQute.bnd</groupId><artifactId>bnd-maven-plugin</artifactId><version>6.4.0</version>
+        <executions><execution><goals><goal>bnd-process</goal></goals></execution></executions>
+      </plugin>
       <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.2.5</version></plugin>
       <plugin>
         <groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>0.8.12</version>

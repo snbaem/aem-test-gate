@@ -43,7 +43,8 @@ class GreetingServletTest {
 
         servlet.doGet(context.request(), context.response());
 
-        assertEquals("application/json", context.response().getContentType());
+        assertEquals("application/json;charset=UTF-8", context.response().getContentType());
+        assertEquals("UTF-8", context.response().getCharacterEncoding());
         assertEquals("{\"message\":\"Hello, Asha!\"}", context.response().getOutputAsString());
     }
 
