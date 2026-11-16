@@ -8,6 +8,44 @@ skill + hook that writes unit tests for new Sling Models, OSGi services and serv
 - `.claude/skills/aem-junit-agent/SKILL.md` : classify, draft, ask to save, ask to run, repair (max 2 loops).
 - `src/test/java/...` : reference tests (the shape the agent should produce).
 
+## Why this, and not just asking Claude for a test?
+
+Claude Code, in the terminal or the VS Code extension, can already write a JUnit test when
+asked. This repo doesn't add that ability. It turns it into a **repeatable, team-wide workflow**:
+automatic, consistent and gated, and versioned with the code. The VS Code extension loads this
+project's `.claude/` folder too, so the comparison is ad-hoc prompting versus a codified recipe.
+
+| | Ad-hoc ("write a JUnit for this class") | This recipe |
+|---|---|---|
+| **When it happens** | Only if the developer remembers to ask | The hook notices a new class with no test right after Claude writes it, and starts the workflow |
+| **How the test is written** | Differs by developer, prompt and run | One approach: classify (Sling Model / OSGi service / servlet), use the matching AEM Mocks scaffold, cover the happy path, null and blank input, and each branch |
+| **AEM know-how** | Up to the model each time (Mockito everything, reflect into private fields, wrong resource resolver) | Written down: `AemContext`, `RESOURCERESOLVER_MOCK` unless JCR is needed, register collaborators instead of reflecting, fake data only |
+| **Safety** | May save files, run builds, or change production code to make a test pass | Two permission gates (save, run); fixes the test and not the class; at most 2 repair attempts; flags likely production bugs instead of bending the test |
+| **Proof it works** | You get a file | Runs the test, repairs it, and reports pass/fail plus JaCoCo coverage |
+| **Sharing** | Lives in one person's chat history | Committed to git: reviewed in PRs and picked up by everyone who clones the repo |
+
+### The recipe
+
+1. **Trigger (hook):** `.claude/hooks/detect_new_java_class.py` decides *when* to act.
+2. **Procedure (skill):** `.claude/skills/aem-junit-agent/SKILL.md` decides *how*: classify, draft,
+   gate, run, repair, report.
+3. **Exemplars:** the reference tests in `src/test/java` show *what good looks like*.
+4. **A build where tests can pass:** AEM SDK API on the test classpath, `bnd-maven-plugin` for OSGi
+   component metadata (without it, OSGi Mock fails with `NoScrMetadata`), and a pinned Maven Wrapper.
+5. **Proof (CI):** GitHub Actions runs the tests on every push and pull request.
+
+Steps 1–3 can be copied into any AEM project. Step 4 is usually already in place in a project
+generated from the AEM Project Archetype.
+
+### Limits
+
+- The hook fires only when **Claude** writes a file (`Write` tool). For a class a developer creates
+  by hand in the IDE, ask Claude to use the skill. A pre-commit or CI "class without a test"
+  check would close that gap.
+- Scope is Sling Models, OSGi services and servlets. Workflow steps, schedulers and event handlers
+  are out of scope.
+- Demonstrated on sample classes, not a large production codebase.
+
 ## Try it
 
 ### Prerequisites
