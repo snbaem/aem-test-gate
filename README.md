@@ -1,11 +1,15 @@
-# AEM JUnit agent (demo project)
+# AEM Test Gate
+
+*(formerly "AEM JUnit agent")*
 
 Generic sample AEM-style project (no proprietary code) used to demo a Claude Code
 skill + hook that writes unit tests for new Sling Models, OSGi services and servlets.
 
 - `.claude/hooks/detect_new_java_class.py` : PostToolUse hook; fires when a new class under
   `src/main/java` has no mirrored `*Test.java`.
-- `.claude/skills/aem-junit-agent/SKILL.md` : classify, draft, ask to save, ask to run, repair (max 2 loops).
+- `.claude/skills/aem-test-gate/SKILL.md` : classify, draft, ask to save, ask to run, repair (max 2 loops).
+- `scripts/test_gap_audit.py` : ranked "which classes have no test" report; no agent needed.
+- `scripts/coverage_gate.py` : JaCoCo line-coverage gate; no agent needed.
 - `src/test/java/...` : reference tests (the shape the agent should produce).
 
 ## Why this, and not just asking Claude for a test?
@@ -27,7 +31,7 @@ project's `.claude/` folder too, so the comparison is ad-hoc prompting versus a 
 ### The recipe
 
 1. **Trigger (hook):** `.claude/hooks/detect_new_java_class.py` decides *when* to act.
-2. **Procedure (skill):** `.claude/skills/aem-junit-agent/SKILL.md` decides *how*: classify, draft,
+2. **Procedure (skill):** `.claude/skills/aem-test-gate/SKILL.md` decides *how*: classify, draft,
    gate, run, repair, report.
 3. **Exemplars:** the reference tests in `src/test/java` show *what good looks like*.
 4. **A build where tests can pass:** AEM SDK API on the test classpath, `bnd-maven-plugin` for OSGi
@@ -40,11 +44,60 @@ generated from the AEM Project Archetype.
 ### Limits
 
 - The hook fires only when **Claude** writes a file (`Write` tool). For a class a developer creates
-  by hand in the IDE, ask Claude to use the skill. A pre-commit or CI "class without a test"
-  check would close that gap.
+  by hand in the IDE, run `python3 scripts/test_gap_audit.py` to find it, or ask Claude to use the
+  skill. Wiring that script into pre-commit or CI would close the gap entirely.
 - Scope is Sling Models, OSGi services and servlets. Workflow steps, schedulers and event handlers
   are out of scope.
 - Demonstrated on sample classes, not a large production codebase.
+
+## How this compares to the published AEM recipes
+
+The Experience League [AI Recipe Library](https://experienceleaguecommunities.adobe.com/ai-recipe-library-224)
+already covers the two halves of this, both by Narendra Gandhi. This repo is deliberately
+built on top of them rather than repeating them.
+
+- **AEM Junit Skill** — generates AEM test templates on demand
+  (`npx aem-junit-skill template model`), installable in Codex, Claude or Copilot. If
+  templates are all you need, use that: it works outside Claude Code, which this does not.
+- **Use VS Code GitHub Copilot Hooks to Run Semgrep in an AEM Project** — establishes the
+  PostToolUse hook pattern: the agent edits a file, a hook fires, a repo-owned runner
+  script checks the source.
+
+Measured against those two as published, what is left here:
+
+| Capability | Junit Skill | Semgrep hook | This repo |
+| --- | --- | --- | --- |
+| Fires without being asked | no | yes | yes |
+| Detects that a test is *missing* | — | no | **yes** |
+| Classifies the class before choosing a scaffold | yes | — | yes |
+| Writes the test | yes | — | yes |
+| Executes it | no | — | **yes** |
+| Repairs its own failures | no | no | **yes, max 2** |
+| Reports whether coverage moved | no | no | **yes** |
+| Human gate before save and before run | — | — | **yes** |
+
+The contribution is the **verify-and-repair loop behind human gates**, plus the gap
+detection that decides when the loop should start. Not test generation, and not hooks.
+
+## Audit a codebase without the agent
+
+Both scripts are plain Python 3 with no dependencies, and work on any AEM Maven project:
+
+```bash
+# Which classes have no test at all, ranked by branch count
+python3 scripts/test_gap_audit.py
+python3 scripts/test_gap_audit.py --json          # machine-readable
+python3 scripts/test_gap_audit.py --fail-on-gap   # exit 1 if any class lacks a test
+
+# Line coverage, overall or for one class
+./mvnw clean test
+python3 scripts/coverage_gate.py --min 60
+python3 scripts/coverage_gate.py --class HeroModel
+```
+
+`test_gap_audit.py` skips interfaces, enums and annotations, classifies each class, and
+names the scaffold the skill would use. It is the part worth copying even if you never
+run the agent half.
 
 ## Roadmap
 
@@ -54,8 +107,8 @@ repo.
 
 **More skills**
 - Cover what's out of scope today: workflow process steps, schedulers, event handlers.
-- Coverage-gap skill: "bring package X to N% line coverage", driven by the JaCoCo CSV the build
-  already produces.
+- Coverage-gap skill: "bring package X to N% line coverage". `scripts/coverage_gate.py` now reads
+  the JaCoCo CSV the build produces; the skill that acts on it is still to write.
 - Test-review skill: check existing tests against the same conventions.
 - Migration skills: JUnit 4 → 5, PowerMock → AEM Mocks.
 
@@ -143,7 +196,7 @@ it should print nothing.
 | # | What you should see | If it doesn't happen |
 |---|---|---|
 | 1 | Claude writes `src/main/java/.../TeaserModel.java` | — |
-| 2 | Right after the write, Claude says the class has no test and starts the **aem-junit-agent** skill (the hook fired) | Run step 2 above. Check `python3`/`python` is on `PATH` and you started a new session. |
+| 2 | Right after the write, Claude says the class has no test and starts the **aem-test-gate** skill (the hook fired) | Run step 2 above. Check `python3`/`python` is on `PATH` and you started a new session. |
 | 3 | It classifies the class in one line (here: Sling Model, `@Model`) | — |
 | 4 | It shows a draft `TeaserModelTest` covering the happy path, null and blank values, and each branch | — |
 | 5 | **Gate 1:** it asks `Save this test to src/test/java/.../TeaserModelTest.java?` and waits | It must not save before you say yes. |

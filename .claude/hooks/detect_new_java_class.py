@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """PostToolUse hook: when Claude writes a new production Java class that has no
-unit test yet, nudge Claude to run the aem-junit-agent skill.
+unit test yet, nudge Claude to run the aem-test-gate skill.
 
 Reads the hook payload from stdin, prints a JSON hookSpecificOutput on match,
 and stays silent (exit 0) otherwise. Pure stdlib so it runs anywhere.
@@ -39,7 +39,7 @@ def main() -> int:
 
     msg = (
         f"A new AEM Java class was created at {file_path} and has no unit test "
-        f"(expected {test_path}). Use the aem-junit-agent skill to generate one. "
+        f"(expected {test_path}). Use the aem-test-gate skill to generate one. "
         "Follow the skill: classify the class, draft the test, show it to the user, "
         "and ask for permission before saving and before running mvn test."
     )

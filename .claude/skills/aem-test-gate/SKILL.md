@@ -1,5 +1,5 @@
 ---
-name: aem-junit-agent
+name: aem-test-gate
 description: Generate a JUnit 5 unit test for a newly created AEM Java class (Sling Model, OSGi service, or Sling servlet), ask permission before saving, then run mvn test and repair failures. Use when a new class appears under src/main/java without a matching test, or when asked to "write a unit test" for an AEM class.
 ---
 
@@ -26,8 +26,31 @@ process step, scheduler or event handler, say it is out of scope and stop.
    production code) and re-run, at most 2 repair loops. If still failing,
    report the failure and the likely cause, and stop. If the failure looks like
    a production bug, say so instead of bending the test.
-7. Report: tests written, pass/fail, and JaCoCo line coverage for the class
-   from `target/site/jacoco/jacoco.csv` when present.
+7. Report: tests written, pass/fail, and JaCoCo line coverage for the class.
+   Get the number from `python3 scripts/coverage_gate.py --class Foo` rather than
+   reading the CSV by hand. A test that passes while covering nothing is a failure,
+   not a success: say so plainly if that is what happened.
+
+## Auditing a whole codebase
+
+When asked what is untested, do not read every file yourself:
+
+```bash
+python3 scripts/test_gap_audit.py          # ranked gap report
+python3 scripts/test_gap_audit.py --json   # machine-readable
+```
+
+It skips interfaces, enums and annotations, classifies each class, and ranks untested
+classes by branch count. Offer to work the top of that list one class at a time, each
+through the full loop above.
+
+## Prior art
+
+Narendra Gandhi's *AEM Junit Skill* in the Experience League AI Recipe Library covers
+template generation and works outside Claude Code; prefer it when templates are all that
+is needed. His Semgrep-via-Copilot-hooks recipe establishes the PostToolUse pattern used
+here. What this skill adds is the missing-test detection, the execute-and-repair loop,
+the coverage check, and the two gates.
 
 ## Classification and scaffolds
 
