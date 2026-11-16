@@ -46,6 +46,51 @@ generated from the AEM Project Archetype.
   are out of scope.
 - Demonstrated on sample classes, not a large production codebase.
 
+## Roadmap
+
+The `.claude/` folder separates **when** to act (hook) from **how** to act (skill). New triggers
+can reuse the skill, new skills can plug into the same hook pattern, and all of it ships with the
+repo.
+
+**More skills**
+- Cover what's out of scope today: workflow process steps, schedulers, event handlers.
+- Coverage-gap skill: "bring package X to N% line coverage", driven by the JaCoCo CSV the build
+  already produces.
+- Test-review skill: check existing tests against the same conventions.
+- Migration skills: JUnit 4 → 5, PowerMock → AEM Mocks.
+
+**More hooks**
+- Match `Edit` as well as `Write`, so new public methods on existing classes prompt test updates.
+- `SessionStart`: check the JDK and warn when Maven would run on Java 8.
+- `Stop`: run `./mvnw test` before Claude finishes, so a session can't end with a failing build.
+- `PreToolUse`: block edits under `src/main` while the skill runs, so "fix the test, not the
+  class" is enforced rather than only instructed.
+
+**More of `.claude/`**
+- `CLAUDE.md`: always-on project conventions beyond tests.
+- `agents/`: a test-writer subagent limited to `src/test`, and a reviewer subagent.
+- `permissions` in `settings.json`: pre-approve `./mvnw test`, deny risky commands.
+
+**Wider rollout**
+- Package `.claude/` as a Claude Code **plugin** an organisation installs once, instead of copying
+  the folder into each repo.
+- Run Claude Code **headless in CI** (`claude -p` or the Claude Code GitHub Action) on pull
+  requests to find new classes without tests and suggest them. This closes the gap for classes
+  developers create by hand.
+
+## Is it Claude-only?
+
+| Part | Portability |
+|---|---|
+| **Runtime** (hook firing, skill loading, the gates) | Claude Code, which runs Claude models (directly from Anthropic or through cloud platforms such as Amazon Bedrock or Google Vertex AI). |
+| **Skill** (`SKILL.md`) | Plain Markdown with a short header. Other coding agents that read the Agent Skills format may load it as-is (check each tool's docs). Otherwise its content can go into another tool's instructions file (e.g. `AGENTS.md`) unchanged. |
+| **Hook script** | Generic Python, JSON in and JSON out. The wiring in `.claude/settings.json` is Claude Code-specific; other tools would need a small adapter. |
+| **Build, reference tests, CI** | No AI dependency. Useful with any model, or none. |
+
+The conventions, the gated workflow and a build where AEM tests pass are model-agnostic. The
+automation that ties them together is a Claude Code feature, and that's the runtime this repo was
+tested on.
+
 ## Try it
 
 ### Prerequisites
