@@ -17,7 +17,11 @@ process step, scheduler or event handler, say it is out of scope and stop.
    `src/test/java/x/FooTest.java`. Cover happy path, null/blank/empty input,
    and each branch. Prefer behavior assertions over implementation details.
 4. **Gate 1:** show the draft and ask: "Save this test to <path>?" Wait for yes.
-5. Save, then **Gate 2:** ask "Run `mvn -q test -Dtest=FooTest`?" Wait for yes.
+5. Save, then **Gate 2:** ask "Run `./mvnw -q test -Dtest=FooTest`?" Wait for yes.
+   Use the Maven Wrapper (`./mvnw`, or `mvnw.cmd` from PowerShell/cmd), not a
+   system `mvn`, so the Maven version matches CI. The build needs JDK 11+: if it
+   fails with `invalid flag: --release`, Maven is on Java 8. Point `JAVA_HOME` at
+   a JDK 11+ for that command only and tell the user, rather than editing the pom.
 6. Run it. On failure, read the surefire output, fix the **test** (not the
    production code) and re-run, at most 2 repair loops. If still failing,
    report the failure and the likely cause, and stop. If the failure looks like
